@@ -141,14 +141,23 @@
   // telefono su cui è installata l'app. Mostriamo quindi il tentativo
   // di apertura app / pulsante SOLO se il dispositivo corrente è un
   // telefono Android; altrimenti mostriamo solo un messaggio informativo.
+  //
+  // Esistono più varianti installabili dell'app (es. build "normale" e
+  // build "test"), ciascuna con un applicationId diverso. Non sappiamo a
+  // priori quale sia installata sul dispositivo che apre il link, quindi
+  // le proviamo IN SEQUENZA: se il tentativo per un package fallisce
+  // (Chrome rimbalza su S.browser_fallback_url), si passa al successivo;
+  // solo se falliscono tutti si mostra la card informativa.
+  var APP_PACKAGES = ["com.example.a864", "com.example.a864test"];
 
   var isAndroid = /Android/i.test(navigator.userAgent);
   var card = document.getElementById("card");
 
   // Card informativa mostrata in OGNI caso in cui non è possibile (o non ha
   // senso tentare di) aprire l'app: dispositivo diverso da Android, oppure
-  // Android ma apertura dell'app fallita (non installata). Nessun pulsante:
-  // l'utente deve solo tornare all'app manualmente.
+  // Android ma apertura dell'app fallita per tutti i package (nessuna
+  // variante installata). Nessun pulsante: l'utente deve solo tornare
+  // all'app manualmente.
   function showInfoCard() {
     card.innerHTML =
       '<div class="icon">✓</div>' +
@@ -158,8 +167,10 @@
 
   // Se dopo il tentativo di apertura la pagina resta visibile (invece
   // che finire in background perché l'app si è aperta sopra), assumiamo
-  // che l'apertura sia fallita e mostriamo la card informativa.
-  function scheduleFailureCheck(delayMs) {
+  // che l'apertura sia fallita e passiamo al package successivo (o, se
+  // era l'ultimo, mostriamo la card informativa). Rete di sicurezza nel
+  // caso il browser non rispetti S.browser_fallback_url.
+  function scheduleFailureCheck(delayMs, onFail) {
     var didHide = false;
     function onVisibilityChange() {
       if (document.hidden) {
@@ -170,25 +181,30 @@
     setTimeout(function () {
       document.removeEventListener("visibilitychange", onVisibilityChange);
       if (!didHide) {
-        showInfoCard();
+        onFail();
       }
     }, delayMs);
   }
 
-  // Se siamo qui a causa del rimbalzo di S.browser_fallback_url (vedi sotto),
-  // significa che il tentativo di apertura app è già fallito: mostriamo
-  // subito la card informativa, senza ritentare (eviterebbe un loop).
-  var alreadyFailed =
-    new URLSearchParams(window.location.search).get("openFailed") === "1";
+  // "step" indica quale package della lista tentare in questo caricamento
+  // della pagina: 0 = primo package, 1 = secondo, ecc. Un valore pari alla
+  // lunghezza dell'array significa "tutti i tentativi esauriti".
+  var step = parseInt(
+    new URLSearchParams(window.location.search).get("openStep") || "0",
+    10
+  );
+  if (isNaN(step) || step < 0) step = 0;
 
-  if (isAndroid && !alreadyFailed) {
+  if (isAndroid && step < APP_PACKAGES.length) {
+    var currentPackage = APP_PACKAGES[step];
+
     // Raccogliamo i parametri che Supabase aggiunge alla URL, sia come
     // query string sia come frammento (#), e li uniamo: il codice
     // Kotlin dell'app (toAuthParams()) li legge in entrambi i formati.
     var params = new URLSearchParams();
 
     new URLSearchParams(window.location.search).forEach(function (value, key) {
-      params.set(key, value);
+      if (key !== "openStep") params.set(key, value);
     });
 
     var rawHash = window.location.hash ? window.location.hash.substring(1) : "";
@@ -198,12 +214,14 @@
 
     var query = params.toString();
 
-    // URL di fallback: la STESSA pagina, con un parametro marcatore.
-    // Se l'app non è installata, Chrome (per specifica "intent://") naviga
-    // qui invece di andare sul Play Store a cercare il package (che, non
-    // essendo un'app pubblicata, risulterebbe "elemento non trovato").
+    // URL di fallback: la STESSA pagina, con lo step successivo. Se il
+    // package corrente non è installato, Chrome (per specifica
+    // "intent://") naviga qui invece di andare sul Play Store a cercarlo
+    // (che, non essendo un'app pubblicata, risulterebbe "elemento non
+    // trovato"). Alla prossima esecuzione dello script si tenta il
+    // package successivo, o si mostra la card se erano finiti.
     var fallbackUrl = new URL(window.location.href);
-    fallbackUrl.searchParams.set("openFailed", "1");
+    fallbackUrl.searchParams.set("openStep", String(step + 1));
 
     // URI "intent://" (sintassi ufficiale di Chrome/Android per aprire
     // un'app da una pagina web): più affidabile di un semplice link con
@@ -212,8 +230,8 @@
     var intentUrl =
       "intent://auth-callback" +
       (query ? "?" + query : "") +
-      "#Intent;scheme=864;package=com.example.a864;S.browser_fallback_url=" +
-      encodeURIComponent(fallbackUrl.toString()) +
+      "#Intent;scheme=864;package=" + currentPackage +
+      ";S.browser_fallback_url=" + encodeURIComponent(fallbackUrl.toString()) +
       ";end";
 
     card.innerHTML =
@@ -222,20 +240,23 @@
       '<p class="with-button">Se non si apre automaticamente entro qualche secondo, tocca il pulsante qui sotto.</p>' +
       '<a id="open-app" class="button" href="' + intentUrl + '">Apri l\'app</a>';
 
+    function goToNextStep() {
+      window.location.href = fallbackUrl.toString();
+    }
+
     document.getElementById("open-app").addEventListener("click", function () {
       // Il click è un gesto utente reale: lasciamo che la navigazione
       // tramite href avvenga normalmente, ma pianifichiamo comunque il
-      // controllo di fallimento (rete secondaria, nel caso il browser non
-      // rispetti S.browser_fallback_url).
-      scheduleFailureCheck(1800);
+      // controllo di fallimento come rete di sicurezza.
+      scheduleFailureCheck(1800, goToNextStep);
     });
 
     // Tentativo automatico all'apertura della pagina.
     window.location.href = intentUrl;
-    scheduleFailureCheck(1800);
+    scheduleFailureCheck(1800, goToNextStep);
   } else {
     // Computer, iPhone, altro dispositivo diverso da un telefono Android,
-    // oppure rimbalzo da un tentativo di apertura app fallito: nessun
+    // oppure tutti i package sono stati provati senza successo: nessun
     // pulsante o ulteriore tentativo, solo il messaggio informativo.
     showInfoCard();
   }
