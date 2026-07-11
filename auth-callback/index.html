@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Apertura app in corso…</title>
+  <title>Conferma in corso…</title>
   <style>
     /*
       Colori identici a quelli definiti in ui/theme/Theme.kt (Material 3
@@ -20,6 +20,7 @@
       --primary-container: #DCE9FF;
       --on-surface-variant: #58657E;
       --outline: #B5C2D8;
+      --error: #BA1A1A;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -33,6 +34,7 @@
         --primary-container: #103A8A;
         --on-surface-variant: #B7C7E3;
         --outline: #6F89B2;
+        --error: #FFB4AB;
       }
     }
 
@@ -71,6 +73,25 @@
       animation: spin 0.9s linear infinite;
     }
 
+    .icon {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: var(--primary-container);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .icon.error {
+      background: color-mix(in srgb, var(--error) 20%, var(--surface));
+      color: var(--error);
+    }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -83,9 +104,13 @@
 
     p {
       color: var(--on-surface-variant);
-      margin: 0 0 24px;
+      margin: 0;
       font-size: 0.9rem;
       line-height: 1.4;
+    }
+
+    p.with-button {
+      margin-bottom: 24px;
     }
 
     a.button {
@@ -105,62 +130,97 @@
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="spinner"></div>
-    <h1>Apertura dell'app…</h1>
-    <p>
-      Se non si apre automaticamente entro qualche secondo,
-      tocca il pulsante qui sotto.
-    </p>
-    <a id="open-app" class="button" href="#">Apri l'app</a>
+  <div class="card" id="card">
+    <!-- Contenuto inserito dinamicamente dallo script in base al dispositivo -->
   </div>
 
   <script>
     // Questa pagina è il punto di atterraggio dopo la conferma email/
-    // recupero password su Supabase. L'obiettivo è cedere subito il
-    // controllo all'app nativa, portando con sé i parametri che Supabase
-    // aggiunge alla URL (access_token, refresh_token, type, ...), che
-    // possono arrivare sia come query string sia come frammento (#).
-
-    var params = new URLSearchParams();
-
-    // Parametri da query string (?...)
-    new URLSearchParams(window.location.search).forEach(function (value, key) {
-      params.set(key, value);
-    });
-
-    // Parametri dal frammento (#...), tipico per i token di Supabase
-    var rawHash = window.location.hash ? window.location.hash.substring(1) : "";
-    new URLSearchParams(rawHash).forEach(function (value, key) {
-      params.set(key, value);
-    });
-
-    var query = params.toString();
-
-    // Link "semplice" con schema custom: funziona come fallback manuale
-    // (alcuni browser/webview lo gestiscono comunque bene al tap).
-    var customSchemeUrl = "gym864://auth-callback" + (query ? "?" + query : "");
-
-    // URI "intent://" (sintassi ufficiale di Chrome/Android per aprire
-    // un'app da una pagina web): è molto più affidabile dello schema
-    // custom nudo perché Chrome lo riconosce esplicitamente come
-    // richiesta di aprire un'app, anche dopo essere arrivati qui tramite
-    // una catena di redirect https (es. dal link-wrapper di Gmail).
-    var intentUrl =
-      "intent://auth-callback" +
-      (query ? "?" + query : "") +
-      "#Intent;scheme=gym864;package=com.example.a864;end";
+    // recupero password su Supabase. Il link nell'email può essere aperto
+    // da QUALSIASI dispositivo (es. computer), non necessariamente dal
+    // telefono su cui è installata l'app. Mostriamo quindi il tentativo
+    // di apertura app / pulsante SOLO se il dispositivo corrente è un
+    // telefono Android; altrimenti mostriamo solo un messaggio informativo.
 
     var isAndroid = /Android/i.test(navigator.userAgent);
-    var target = isAndroid ? intentUrl : customSchemeUrl;
+    var card = document.getElementById("card");
 
-    document.getElementById("open-app").href = target;
+    function showFailureMessage() {
+      card.innerHTML =
+        '<div class="icon error">!</div>' +
+        "<h1>Uhm...</h1>" +
+        "<p>Sembrerebbe ci sia un problema con l'apertura dell'app. Per favore, controlla l'esistenza dell'app su questo dispositivo.</p>";
+    }
 
-    // Tentativo automatico. Se nessuna app può gestire il link, il
-    // browser resta su questa pagina e l'utente può usare il pulsante,
-    // che essendo un tap reale (gesto utente) viene gestito in modo più
-    // affidabile dal sistema rispetto alla navigazione automatica via JS.
-    window.location.href = target;
+    // Se dopo il tentativo di apertura la pagina resta visibile (invece
+    // che finire in background perché l'app si è aperta sopra), assumiamo
+    // che l'apertura sia fallita e mostriamo un messaggio d'errore.
+    function scheduleFailureCheck(delayMs) {
+      var didHide = false;
+      function onVisibilityChange() {
+        if (document.hidden) {
+          didHide = true;
+        }
+      }
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      setTimeout(function () {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        if (!didHide) {
+          showFailureMessage();
+        }
+      }, delayMs);
+    }
+
+    if (isAndroid) {
+      // Raccogliamo i parametri che Supabase aggiunge alla URL, sia come
+      // query string sia come frammento (#), e li uniamo: il codice
+      // Kotlin dell'app (toAuthParams()) li legge in entrambi i formati.
+      var params = new URLSearchParams();
+
+      new URLSearchParams(window.location.search).forEach(function (value, key) {
+        params.set(key, value);
+      });
+
+      var rawHash = window.location.hash ? window.location.hash.substring(1) : "";
+      new URLSearchParams(rawHash).forEach(function (value, key) {
+        params.set(key, value);
+      });
+
+      var query = params.toString();
+
+      // URI "intent://" (sintassi ufficiale di Chrome/Android per aprire
+      // un'app da una pagina web): più affidabile di un semplice link con
+      // schema custom, specialmente dopo essere arrivati qui tramite una
+      // catena di redirect https (es. dal link-wrapper di Gmail).
+      var intentUrl =
+        "intent://auth-callback" +
+        (query ? "?" + query : "") +
+        "#Intent;scheme=gym864;package=com.example.a864;end";
+
+      card.innerHTML =
+        '<div class="spinner"></div>' +
+        "<h1>Apertura dell'app…</h1>" +
+        '<p class="with-button">Se non si apre automaticamente entro qualche secondo, tocca il pulsante qui sotto.</p>' +
+        '<a id="open-app" class="button" href="' + intentUrl + '">Apri l\'app</a>';
+
+      document.getElementById("open-app").addEventListener("click", function () {
+        // Il click è un gesto utente reale: lasciamo che la navigazione
+        // tramite href avvenga normalmente, ma pianifichiamo comunque il
+        // controllo di fallimento nel caso l'app non risulti installata.
+        scheduleFailureCheck(1800);
+      });
+
+      // Tentativo automatico all'apertura della pagina.
+      window.location.href = intentUrl;
+      scheduleFailureCheck(1800);
+    } else {
+      // Computer, iPhone o altro dispositivo diverso dal telefono con
+      // l'app: nessun pulsante o tentativo di apertura, solo un messaggio.
+      card.innerHTML =
+        '<div class="icon">✓</div>' +
+        "<h1>Conferma ricevuta</h1>" +
+        "<p>Puoi tornare al telefono su cui hai l'app installata: la conferma verrà applicata automaticamente al tuo account.</p>";
+    }
   </script>
 </body>
 </html>
