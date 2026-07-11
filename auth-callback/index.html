@@ -3,58 +3,163 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Email Associata</title>
+  <title>Apertura app in corso…</title>
   <style>
+    /*
+      Colori identici a quelli definiti in ui/theme/Theme.kt (Material 3
+      ColorScheme), per far sembrare questa pagina di transizione parte
+      della stessa app invece di un sito esterno.
+    */
+    :root {
+      /* LightColorScheme */
+      --background: #F6F9FF;
+      --on-background: #0F1B33;
+      --surface: #FFFFFF;
+      --primary: #165DDB;
+      --on-primary: #FFFFFF;
+      --primary-container: #DCE9FF;
+      --on-surface-variant: #58657E;
+      --outline: #B5C2D8;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        /* DarkColorScheme */
+        --background: #070D18;
+        --on-background: #EAF2FF;
+        --surface: #0D1422;
+        --primary: #5FA0FF;
+        --on-primary: #00142E;
+        --primary-container: #103A8A;
+        --on-surface-variant: #B7C7E3;
+        --outline: #6F89B2;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      font-family: -apple-system, Roboto, Arial, sans-serif;
-      background: #0f172a;
-      color: #f1f5f9;
+      font-family: -apple-system, Roboto, "Segoe UI", Arial, sans-serif;
+      background: var(--background);
+      color: var(--on-background);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
-      text-align: center;
       padding: 24px;
-      box-sizing: border-box;
     }
-    h1 { font-size: 1.25rem; margin-bottom: 8px; }
-    p { color: #94a3b8; margin-top: 0; max-width: 320px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--outline);
+      border-radius: 20px;
+      padding: 32px 28px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(15, 27, 51, 0.08);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      border: 4px solid var(--primary-container);
+      border-top-color: var(--primary);
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+
+    p {
+      color: var(--on-surface-variant);
+      margin: 0 0 24px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
     a.button {
-      margin-top: 24px;
-      background: #22c55e;
-      color: #0f172a;
+      display: inline-block;
+      width: 100%;
+      background: var(--primary);
+      color: var(--on-primary);
       text-decoration: none;
       font-weight: 600;
-      padding: 12px 24px;
-      border-radius: 8px;
+      font-size: 0.95rem;
+      padding: 14px 24px;
+      border-radius: 12px;
+      transition: opacity 0.15s ease;
     }
+
+    a.button:active { opacity: 0.85; }
   </style>
 </head>
 <body>
-  <h1>Email associata correttamente!</h1>
-  <p>
-    Puoi anche tornare all'app, noterai che l'email è stata associata.
-  </p>
+  <div class="card">
+    <div class="spinner"></div>
+    <h1>Apertura dell'app…</h1>
+    <p>
+      Se non si apre automaticamente entro qualche secondo,
+      tocca il pulsante qui sotto.
+    </p>
+    <a id="open-app" class="button" href="#">Apri l'app</a>
+  </div>
 
   <script>
-    // Questa pagina è il fallback usato SOLO se, per qualche motivo,
-    // Android non ha ancora verificato l'App Link https (es. nelle prime
-    // ore dopo il deploy) e quindi il link è stato aperto nel browser
-    // invece che direttamente nell'app. Ricostruiamo lo stesso URL con lo
-    // schema custom "gym864://" (già gestito dall'app) preservando query
-    // string e frammento (dove Supabase mette access_token, refresh_token,
-    // type, ecc.), poi tentiamo la navigazione automatica.
-    var search = window.location.search || "";
-    var hash = window.location.hash || "";
-    var target = "gym864://auth-callback" + search + hash;
+    // Questa pagina è il punto di atterraggio dopo la conferma email/
+    // recupero password su Supabase. L'obiettivo è cedere subito il
+    // controllo all'app nativa, portando con sé i parametri che Supabase
+    // aggiunge alla URL (access_token, refresh_token, type, ...), che
+    // possono arrivare sia come query string sia come frammento (#).
+
+    var params = new URLSearchParams();
+
+    // Parametri da query string (?...)
+    new URLSearchParams(window.location.search).forEach(function (value, key) {
+      params.set(key, value);
+    });
+
+    // Parametri dal frammento (#...), tipico per i token di Supabase
+    var rawHash = window.location.hash ? window.location.hash.substring(1) : "";
+    new URLSearchParams(rawHash).forEach(function (value, key) {
+      params.set(key, value);
+    });
+
+    var query = params.toString();
+
+    // Link "semplice" con schema custom: funziona come fallback manuale
+    // (alcuni browser/webview lo gestiscono comunque bene al tap).
+    var customSchemeUrl = "gym864://auth-callback" + (query ? "?" + query : "");
+
+    // URI "intent://" (sintassi ufficiale di Chrome/Android per aprire
+    // un'app da una pagina web): è molto più affidabile dello schema
+    // custom nudo perché Chrome lo riconosce esplicitamente come
+    // richiesta di aprire un'app, anche dopo essere arrivati qui tramite
+    // una catena di redirect https (es. dal link-wrapper di Gmail).
+    var intentUrl =
+      "intent://auth-callback" +
+      (query ? "?" + query : "") +
+      "#Intent;scheme=gym864;package=com.example.a864;end";
+
+    var isAndroid = /Android/i.test(navigator.userAgent);
+    var target = isAndroid ? intentUrl : customSchemeUrl;
 
     document.getElementById("open-app").href = target;
 
-    // Tentativo automatico. Se il sistema non trova un'app che gestisce
-    // "gym864://", il browser resta semplicemente su questa pagina e
-    // l'utente può usare il pulsante.
+    // Tentativo automatico. Se nessuna app può gestire il link, il
+    // browser resta su questa pagina e l'utente può usare il pulsante,
+    // che essendo un tap reale (gesto utente) viene gestito in modo più
+    // affidabile dal sistema rispetto alla navigazione automatica via JS.
     window.location.href = target;
   </script>
 </body>
