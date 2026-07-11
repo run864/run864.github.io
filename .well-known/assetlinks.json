@@ -5,8 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.example.a864",
       "sha256_cert_fingerprints": [
-        "INSERISCI_QUI_LO_SHA256_DEL_KEYSTORE_DI_RELEASE",
-        "INSERISCI_QUI_LO_SHA256_DEL_KEYSTORE_DI_DEBUG"
+        "7D:93:60:7A:BD:36:6A:40:52:40:80:D0:E9:73:99:9A:DD:76:E6:1B:9D:2A:5A:D7:54:E7:CB:08:F6:FE:E3:41",
+        "F2:AD:04:72:97:05:24:42:F4:61:34:A7:C0:1E:B1:91:38:D5:86:4F:6C:98:99:02:9A:0F:5F:49:99:FC:15:07"
       ]
     }
   }
