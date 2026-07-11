@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apertura app in corso…</title>
+  <style>
+    body {
+      font-family: -apple-system, Roboto, Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    h1 { font-size: 1.25rem; margin-bottom: 8px; }
+    p { color: #94a3b8; margin-top: 0; max-width: 320px; }
+    a.button {
+      margin-top: 24px;
+      background: #22c55e;
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Apertura dell'app…</h1>
+  <p>
+    Se l'app non si apre automaticamente entro qualche secondo,
+    tocca il pulsante qui sotto.
+  </p>
+  <a id="open-app" class="button" href="#">Apri l'app</a>
+
+  <script>
+    // Questa pagina è il fallback usato SOLO se, per qualche motivo,
+    // Android non ha ancora verificato l'App Link https (es. nelle prime
+    // ore dopo il deploy) e quindi il link è stato aperto nel browser
+    // invece che direttamente nell'app. Ricostruiamo lo stesso URL con lo
+    // schema custom "gym864://" (già gestito dall'app) preservando query
+    // string e frammento (dove Supabase mette access_token, refresh_token,
+    // type, ecc.), poi tentiamo la navigazione automatica.
+    var search = window.location.search || "";
+    var hash = window.location.hash || "";
+    var target = "gym864://auth-callback" + search + hash;
+
+    document.getElementById("open-app").href = target;
+
+    // Tentativo automatico. Se il sistema non trova un'app che gestisce
+    // "gym864://", il browser resta semplicemente su questa pagina e
+    // l'utente può usare il pulsante.
+    window.location.href = target;
+  </script>
+</body>
+</html>
