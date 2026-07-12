@@ -3,45 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Recupero password…</title>
+  <title>Imposta una nuova password</title>
   <style>
-    /*
-      Colori identici a quelli definiti in ui/theme/Theme.kt (Material 3
-      ColorScheme), per far sembrare questa pagina di transizione parte
-      della stessa app invece di un sito esterno.
-    */
     :root {
-      /* LightColorScheme */
       --background: #F6F9FF;
       --on-background: #0F1B33;
       --surface: #FFFFFF;
+      --surface-variant: #EAF0FA;
       --primary: #165DDB;
+      --primary-strong: #0B2FAF;
       --on-primary: #FFFFFF;
       --primary-container: #DCE9FF;
       --on-surface-variant: #58657E;
       --outline: #B5C2D8;
       --error: #BA1A1A;
+      --error-container: #FFDAD6;
+      --success: #1E7A46;
+      --success-container: #D7F3E3;
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
-        /* DarkColorScheme */
         --background: #070D18;
         --on-background: #EAF2FF;
         --surface: #0D1422;
+        --surface-variant: #1A2538;
         --primary: #5FA0FF;
+        --primary-strong: #2F7BFF;
         --on-primary: #00142E;
         --primary-container: #103A8A;
         --on-surface-variant: #B7C7E3;
         --outline: #6F89B2;
         --error: #FFB4AB;
+        --error-container: #4C0F0B;
+        --success: #7FDDA8;
+        --success-container: #0E3D22;
       }
     }
 
     * { box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, Roboto, "Segoe UI", Arial, sans-serif;
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       background: var(--background);
       color: var(--on-background);
       display: flex;
@@ -55,220 +57,408 @@
     .card {
       background: var(--surface);
       border: 1px solid var(--outline);
-      border-radius: 20px;
-      padding: 32px 28px;
-      max-width: 340px;
+      border-radius: 24px;
+      padding: 36px 32px;
+      max-width: 380px;
       width: 100%;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(15, 27, 51, 0.08);
+      box-shadow: 0 12px 32px rgba(15, 27, 51, 0.10);
     }
 
-    .spinner {
-      width: 40px;
-      height: 40px;
-      margin: 0 auto 20px;
-      border-radius: 50%;
-      border: 4px solid var(--primary-container);
-      border-top-color: var(--primary);
-      animation: spin 0.9s linear infinite;
-    }
-
-    .icon {
-      width: 40px;
-      height: 40px;
-      margin: 0 auto 20px;
-      border-radius: 50%;
-      background: var(--primary-container);
-      color: var(--primary);
+    .badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+      color: var(--on-primary);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.3rem;
-      font-weight: 700;
-    }
-
-    .icon.error {
-      background: color-mix(in srgb, var(--error) 20%, var(--surface));
-      color: var(--error);
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      margin-bottom: 20px;
     }
 
     h1 {
-      font-size: 1.1rem;
-      margin: 0 0 8px;
-      font-weight: 600;
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin: 0 0 6px;
+      letter-spacing: -0.01em;
     }
 
-    p {
+    p.subtitle {
       color: var(--on-surface-variant);
-      margin: 0;
-      font-size: 0.9rem;
-      line-height: 1.4;
+      margin: 0 0 28px;
+      font-size: 0.92rem;
+      line-height: 1.5;
     }
 
-    p.with-button {
-      margin-bottom: 24px;
-    }
-
-    a.button {
-      display: inline-block;
-      width: 100%;
-      background: var(--primary);
-      color: var(--on-primary);
-      text-decoration: none;
+    label {
+      display: block;
+      font-size: 0.82rem;
       font-weight: 600;
-      font-size: 0.95rem;
-      padding: 14px 24px;
-      border-radius: 12px;
-      transition: opacity 0.15s ease;
+      color: var(--on-surface-variant);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
     }
 
-    a.button:active { opacity: 0.85; }
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.98rem;
+      color: var(--on-background);
+      background: var(--surface-variant);
+      border: 1.5px solid transparent;
+      border-radius: 14px;
+      padding: 14px 44px 14px 16px;
+      outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      background: var(--surface);
+    }
+
+    input.invalid {
+      border-color: var(--error);
+    }
+
+    .toggle-visibility {
+      position: absolute;
+      right: 6px;
+      width: 34px;
+      height: 34px;
+      border: none;
+      background: transparent;
+      color: var(--on-surface-variant);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+    }
+
+    .toggle-visibility:hover {
+      background: var(--primary-container);
+      color: var(--primary);
+    }
+
+    .toggle-visibility svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    .strength {
+      display: flex;
+      gap: 5px;
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+
+    .strength-seg {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--outline);
+      opacity: 0.5;
+      transition: background 0.2s ease, opacity 0.2s ease;
+    }
+
+    .strength-seg.active-weak { background: var(--error); opacity: 1; }
+    .strength-seg.active-mid { background: #E0A400; opacity: 1; }
+    .strength-seg.active-strong { background: var(--success); opacity: 1; }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--on-surface-variant);
+      margin-top: 6px;
+    }
+
+    .hint.error {
+      color: var(--error);
+    }
+
+    button.submit {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 15px 24px;
+      font-family: inherit;
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--on-primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.15s ease, transform 0.05s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    button.submit:active { transform: scale(0.99); }
+    button.submit:disabled { opacity: 0.55; cursor: default; }
+
+    .spinner-inline {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,0.4);
+      border-top-color: currentColor;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @media (prefers-color-scheme: dark) {
+      .spinner-inline { border: 2.5px solid rgba(0,20,46,0.35); border-top-color: currentColor; }
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .banner {
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      margin-bottom: 18px;
+    }
+    .banner.show { display: flex; }
+    .banner.error {
+      background: var(--error-container);
+      color: var(--error);
+    }
+
+    .state-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+    }
+    .state-icon.success { background: var(--success-container); color: var(--success); }
+    .state-icon.error { background: var(--error-container); color: var(--error); }
+    .state-icon svg { width: 28px; height: 28px; }
+
+    .center { text-align: center; }
+
+    .fine-print {
+      font-size: 0.78rem;
+      color: var(--on-surface-variant);
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
-<div class="card" id="card">
-  <!-- Contenuto inserito dinamicamente dallo script in base al dispositivo -->
-</div>
+  <div class="card" id="card">
+    <div class="badge">864</div>
+    <div id="content"></div>
+  </div>
 
-<script>
-  // Questa pagina è il punto di atterraggio dopo la richiesta di recupero
-  // password su Supabase (path dedicato, distinto da quello usato per la
-  // conferma email/associazione: vedi index.html). Il link nell'email può
-  // essere aperto da QUALSIASI dispositivo (es. computer), non
-  // necessariamente dal telefono su cui è installata l'app. Mostriamo
-  // quindi il tentativo di apertura app / pulsante SOLO se il dispositivo
-  // corrente è un telefono Android; altrimenti mostriamo solo un messaggio
-  // informativo.
-  //
-  // Esistono più varianti installabili dell'app (es. build "normale" e
-  // build "test"), ciascuna con un applicationId diverso. Non sappiamo a
-  // priori quale sia installata sul dispositivo che apre il link, quindi
-  // le proviamo IN SEQUENZA: se il tentativo per un package fallisce
-  // (Chrome rimbalza su S.browser_fallback_url), si passa al successivo;
-  // solo se falliscono tutti si mostra la card informativa.
-  var APP_PACKAGES = ["com.example.a864", "com.example.a864test"];
+  <script>
+    (function () {
+      var SUPABASE_URL = "https://gnwxhhjoimbtnrfcmnsw.supabase.co";
+      var SUPABASE_ANON_KEY = "sb_publishable_UvrMKHHoKQX8u_evq7xrVQ_85EBXx7M";
 
-  var isAndroid = /Android/i.test(navigator.userAgent);
-  var card = document.getElementById("card");
+      var content = document.getElementById("content");
 
-  // Card informativa mostrata in OGNI caso in cui non è possibile (o non ha
-  // senso tentare di) aprire l'app: dispositivo diverso da Android, oppure
-  // Android ma apertura dell'app fallita per tutti i package (nessuna
-  // variante installata). Nessun pulsante: l'utente deve solo tornare
-  // all'app manualmente.
-  function showInfoCard() {
-    card.innerHTML =
-      '<div class="icon">✓</div>' +
-      "<h1>Richiesta ricevuta</h1>" +
-      "<p>Puoi tornare all'app: ti verrà chiesto di impostare la nuova password.</p>";
-  }
+      // I token di Supabase arrivano sia come query string sia come
+      // frammento (#), a seconda del contesto: li leggiamo entrambi.
+      var params = new URLSearchParams();
+      new URLSearchParams(window.location.search).forEach(function (v, k) { params.set(k, v); });
+      var rawHash = window.location.hash ? window.location.hash.substring(1) : "";
+      new URLSearchParams(rawHash).forEach(function (v, k) { params.set(k, v); });
 
-  // Se dopo il tentativo di apertura la pagina resta visibile (invece
-  // che finire in background perché l'app si è aperta sopra), assumiamo
-  // che l'apertura sia fallita e passiamo al package successivo (o, se
-  // era l'ultimo, mostriamo la card informativa). Rete di sicurezza nel
-  // caso il browser non rispetti S.browser_fallback_url.
-  function scheduleFailureCheck(delayMs, onFail) {
-    var didHide = false;
-    function onVisibilityChange() {
-      if (document.hidden) {
-        didHide = true;
+      var accessToken = params.get("access_token");
+      var errorDescription = params.get("error_description") || params.get("error");
+
+      var eyeOpenSVG =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+      var eyeClosedSVG =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>' +
+        '<line x1="1" y1="1" x2="23" y2="23"/></svg>';
+      var checkSVG =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      var alertSVG =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>';
+
+      function renderInvalidLink(message) {
+        content.innerHTML =
+          '<div class="state-icon error">' + alertSVG + '</div>' +
+          '<h1 class="center">Link non valido</h1>' +
+          '<p class="subtitle center">' + message + '</p>' +
+          '<p class="fine-print">Torna alla schermata di accesso dell\'app e richiedi un nuovo link di recupero.</p>';
       }
-    }
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    setTimeout(function () {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      if (!didHide) {
-        onFail();
+
+      function renderSuccess() {
+        content.innerHTML =
+          '<div class="state-icon success">' + checkSVG + '</div>' +
+          '<h1 class="center">Password aggiornata</h1>' +
+          '<p class="subtitle center">La tua password è stata cambiata con successo. Ora puoi accedere all\'app con le nuove credenziali.</p>' +
+          '<p class="fine-print">Puoi chiudere questa pagina.</p>';
       }
-    }, delayMs);
-  }
 
-  // "step" indica quale package della lista tentare in questo caricamento
-  // della pagina: 0 = primo package, 1 = secondo, ecc. Un valore pari alla
-  // lunghezza dell'array significa "tutti i tentativi esauriti".
-  var step = parseInt(
-    new URLSearchParams(window.location.search).get("openStep") || "0",
-    10
-  );
-  if (isNaN(step) || step < 0) step = 0;
+      function passwordStrength(pw) {
+        if (pw.length === 0) return 0;
+        var score = 0;
+        if (pw.length >= 6) score++;
+        if (pw.length >= 10) score++;
+        if (/[0-9]/.test(pw) && /[a-zA-Z]/.test(pw)) score++;
+        if (/[^a-zA-Z0-9]/.test(pw)) score++;
+        return Math.min(score, 3);
+      }
 
-  if (isAndroid && step < APP_PACKAGES.length) {
-    var currentPackage = APP_PACKAGES[step];
+      function renderForm() {
+        content.innerHTML =
+          '<h1>Imposta una nuova password</h1>' +
+          '<p class="subtitle">Scegli una password sicura per completare il recupero dell\'account.</p>' +
+          '<div class="banner error" id="form-error"></div>' +
+          '<form id="reset-form" novalidate>' +
+            '<div class="field">' +
+              '<label for="password">Nuova password</label>' +
+              '<div class="field-wrap">' +
+                '<input type="password" id="password" autocomplete="new-password" placeholder="Almeno 6 caratteri" />' +
+                '<button type="button" class="toggle-visibility" data-target="password" aria-label="Mostra password">' + eyeOpenSVG + '</button>' +
+              '</div>' +
+              '<div class="strength" id="strength">' +
+                '<div class="strength-seg"></div><div class="strength-seg"></div><div class="strength-seg"></div>' +
+              '</div>' +
+              '<div class="hint" id="password-hint">Minimo 6 caratteri.</div>' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="confirm">Conferma password</label>' +
+              '<div class="field-wrap">' +
+                '<input type="password" id="confirm" autocomplete="new-password" placeholder="Ripeti la password" />' +
+                '<button type="button" class="toggle-visibility" data-target="confirm" aria-label="Mostra password">' + eyeOpenSVG + '</button>' +
+              '</div>' +
+              '<div class="hint" id="confirm-hint"></div>' +
+            '</div>' +
+            '<button type="submit" class="submit" id="submit-btn">Salva nuova password</button>' +
+          '</form>';
 
-    // Raccogliamo i parametri che Supabase aggiunge alla URL, sia come
-    // query string sia come frammento (#), e li uniamo: il codice
-    // Kotlin dell'app (toAuthParams()) li legge in entrambi i formati.
-    var params = new URLSearchParams();
+        var pwInput = document.getElementById("password");
+        var confirmInput = document.getElementById("confirm");
+        var submitBtn = document.getElementById("submit-btn");
+        var formError = document.getElementById("form-error");
+        var strengthSegs = document.querySelectorAll(".strength-seg");
 
-    new URLSearchParams(window.location.search).forEach(function (value, key) {
-      if (key !== "openStep") params.set(key, value);
-    });
+        document.querySelectorAll(".toggle-visibility").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var targetId = btn.getAttribute("data-target");
+            var input = document.getElementById(targetId);
+            var isHidden = input.type === "password";
+            input.type = isHidden ? "text" : "password";
+            btn.innerHTML = isHidden ? eyeClosedSVG : eyeOpenSVG;
+          });
+        });
 
-    var rawHash = window.location.hash ? window.location.hash.substring(1) : "";
-    new URLSearchParams(rawHash).forEach(function (value, key) {
-      params.set(key, value);
-    });
+        pwInput.addEventListener("input", function () {
+          var score = passwordStrength(pwInput.value);
+          strengthSegs.forEach(function (seg, i) {
+            seg.className = "strength-seg";
+            if (i < score) {
+              seg.classList.add(score === 1 ? "active-weak" : score === 2 ? "active-mid" : "active-strong");
+            }
+          });
+          pwInput.classList.remove("invalid");
+          formError.classList.remove("show");
+        });
 
-    var query = params.toString();
+        confirmInput.addEventListener("input", function () {
+          confirmInput.classList.remove("invalid");
+          document.getElementById("confirm-hint").textContent = "";
+          formError.classList.remove("show");
+        });
 
-    // URL di fallback: la STESSA pagina, con lo step successivo. Se il
-    // package corrente non è installato, Chrome (per specifica
-    // "intent://") naviga qui invece di andare sul Play Store a cercarlo
-    // (che, non essendo un'app pubblicata, risulterebbe "elemento non
-    // trovato"). Alla prossima esecuzione dello script si tenta il
-    // package successivo, o si mostra la card se erano finiti.
-    var fallbackUrl = new URL(window.location.href);
-    fallbackUrl.searchParams.set("openStep", String(step + 1));
+        document.getElementById("reset-form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var pw = pwInput.value;
+          var confirm = confirmInput.value;
 
-    // URI "intent://" (sintassi ufficiale di Chrome/Android per aprire
-    // un'app da una pagina web): più affidabile di un semplice link con
-    // schema custom, specialmente dopo essere arrivati qui tramite una
-    // catena di redirect https (es. dal link-wrapper di Gmail).
-    // Nota: l'host usato qui resta "auth-callback" anche su questa pagina
-    // di recupero password, perché è l'UNICO host registrato per lo
-    // schema custom "864://" nell'intent-filter di AndroidManifest.xml. Il
-    // codice Kotlin instrada comunque alla schermata giusta leggendo il
-    // parametro "type" nel frammento dell'URL (recovery/email_change/...),
-    // non l'host: non serve quindi duplicare l'intent-filter per il
-    // solo scopo del fallback via schema custom.
-    var intentUrl =
-      "intent://auth-callback" +
-      (query ? "?" + query : "") +
-      "#Intent;scheme=864;package=" + currentPackage +
-      ";S.browser_fallback_url=" + encodeURIComponent(fallbackUrl.toString()) +
-      ";end";
+          var hasError = false;
+          if (pw.length < 6) {
+            pwInput.classList.add("invalid");
+            document.getElementById("password-hint").textContent = "La password deve avere almeno 6 caratteri.";
+            document.getElementById("password-hint").classList.add("error");
+            hasError = true;
+          } else {
+            document.getElementById("password-hint").textContent = "Minimo 6 caratteri.";
+            document.getElementById("password-hint").classList.remove("error");
+          }
+          if (confirm !== pw) {
+            confirmInput.classList.add("invalid");
+            document.getElementById("confirm-hint").textContent = "Le password non coincidono.";
+            hasError = true;
+          }
+          if (hasError) return;
 
-    card.innerHTML =
-      '<div class="spinner"></div>' +
-      "<h1>Apertura dell'app…</h1>" +
-      '<p class="with-button">Se non si apre automaticamente entro qualche secondo, tocca il pulsante qui sotto.</p>' +
-      '<a id="open-app" class="button" href="' + intentUrl + '">Apri l\'app</a>';
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-inline"></span> Salvataggio…';
+          formError.classList.remove("show");
 
-    function goToNextStep() {
-      window.location.href = fallbackUrl.toString();
-    }
+          fetch(SUPABASE_URL + "/auth/v1/user", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": SUPABASE_ANON_KEY,
+              "Authorization": "Bearer " + accessToken
+            },
+            body: JSON.stringify({ password: pw })
+          })
+            .then(function (res) {
+              return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (result) {
+              if (result.ok) {
+                renderSuccess();
+              } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Salva nuova password";
+                var msg = (result.data && (result.data.msg || result.data.message || result.data.error_description)) ||
+                  "Non è stato possibile aggiornare la password. Il link potrebbe essere scaduto: richiedine uno nuovo dall'app.";
+                formError.textContent = msg;
+                formError.classList.add("show");
+              }
+            })
+            .catch(function () {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Salva nuova password";
+              formError.textContent = "Errore di connessione. Controlla la rete e riprova.";
+              formError.classList.add("show");
+            });
+        });
+      }
 
-    document.getElementById("open-app").addEventListener("click", function () {
-      // Il click è un gesto utente reale: lasciamo che la navigazione
-      // tramite href avvenga normalmente, ma pianifichiamo comunque il
-      // controllo di fallimento come rete di sicurezza.
-      scheduleFailureCheck(1800, goToNextStep);
-    });
-
-    // Tentativo automatico all'apertura della pagina.
-    window.location.href = intentUrl;
-    scheduleFailureCheck(1800, goToNextStep);
-  } else {
-    // Computer, iPhone, altro dispositivo diverso da un telefono Android,
-    // oppure tutti i package sono stati provati senza successo: nessun
-    // pulsante o ulteriore tentativo, solo il messaggio informativo.
-    showInfoCard();
-  }
-</script>
+      if (errorDescription) {
+        renderInvalidLink(decodeURIComponent(errorDescription.replace(/\+/g, " ")) + " Il link potrebbe essere scaduto o già utilizzato.");
+      } else if (!accessToken) {
+        renderInvalidLink("Questo link non contiene le informazioni necessarie per procedere. Assicurati di aver aperto l'ultimo link ricevuto via email.");
+      } else {
+        renderForm();
+      }
+    })();
+  </script>
 </body>
 </html>
