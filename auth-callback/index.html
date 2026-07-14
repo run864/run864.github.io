@@ -56,71 +56,15 @@
 <body>
   <div class="card" id="card"></div>
   <script>
-    var isAndroid = /Android/i.test(navigator.userAgent);
     var card = document.getElementById("card");
 
-    function showFailureMessage() {
-      card.innerHTML =
-        '<div class="icon error">!</div>' +
-        "<h1>Uhm...</h1>" +
-        "<p>Sembrerebbe ci sia un problema con l'apertura dell'app. Per favore, controlla l'esistenza dell'app su questo dispositivo.</p>";
-    }
-
-    function scheduleFailureCheck(delayMs) {
-      var didHide = false;
-      function onVisibilityChange() { if (document.hidden) { didHide = true; } }
-      document.addEventListener("visibilitychange", onVisibilityChange);
-      setTimeout(function () {
-        document.removeEventListener("visibilitychange", onVisibilityChange);
-        if (!didHide) { showFailureMessage(); }
-      }, delayMs);
-    }
-
-    if (isAndroid) {
-      var params = new URLSearchParams();
-      new URLSearchParams(window.location.search).forEach(function (value, key) { params.set(key, value); });
-      var rawHash = window.location.hash ? window.location.hash.substring(1) : "";
-      new URLSearchParams(rawHash).forEach(function (value, key) { params.set(key, value); });
-
-      // Marcatore esplicito letto con priorità dal Kotlin (vedi
-      // SupabaseAuthGatewayImpl: params["flow"] ha priorità su params["type"]).
-      params.set("flow", "email_confirmation");
-
-      var query = params.toString();
-
-      // IMPORTANTE: schema custom navigato DIRETTAMENTE (864://...), non più
-      // con la sintassi "intent://...package=com.example.a864;end". Quella
-      // sintassi delega a Chrome la risoluzione dell'app tramite il
-      // "package" indicato: se Chrome non riesce a risolverla (app non
-      // installata o, come nella fase attuale, non ancora pubblicata sul
-      // Play Store) Chrome stesso, di sua iniziativa, apre la scheda Play
-      // Store di quel package — a meno di specificare esplicitamente un
-      // "S.browser_fallback_url", che qui mancava. Risultato osservato:
-      // "elemento non trovato" perché l'app non è ancora sullo Store.
-      // Navigando direttamente allo schema custom invece, se nessuna app lo
-      // gestisce il browser non fa assolutamente nulla di automatico: resta
-      // su questa pagina, dove l'utente può comunque toccare il pulsante
-      // manuale qui sotto.
-      var appUrl = "864://auth-callback?" + query;
-
-      card.innerHTML =
-        '<div class="spinner"></div>' +
-        "<h1>Conferma dell'email…</h1>" +
-        '<p class="with-button">Se non si apre automaticamente entro qualche secondo, tocca il pulsante qui sotto.</p>' +
-        '<a id="open-app" class="button" href="' + appUrl + '">Apri l\'app</a>';
-
-      document.getElementById("open-app").addEventListener("click", function () {
-        scheduleFailureCheck(1800);
-      });
-
-      window.location.href = appUrl;
-      scheduleFailureCheck(1800);
-    } else {
-      card.innerHTML =
-        '<div class="icon">✓</div>' +
-        "<h1>Email confermata</h1>" +
-        "<p>Puoi tornare al telefono su cui hai l'app installata: la conferma verrà applicata automaticamente al tuo account.</p>";
-    }
+    // Nessun tentativo di apertura automatica dell'app (niente redirect a
+    // schemi custom tipo 864://...): si mostra solo il messaggio di
+    // conferma. L'utente può tornare manualmente all'app.
+    card.innerHTML =
+      '<div class="icon">✓</div>' +
+      "<h1>Email confermata</h1>" +
+      "<p>Puoi tornare al telefono su cui hai l'app installata: la conferma verrà applicata automaticamente al tuo account.</p>";
   </script>
 </body>
 </html>
