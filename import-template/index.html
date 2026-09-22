@@ -13,53 +13,25 @@
   </p>
   <script>
     const id = new URLSearchParams(window.location.search).get("id");
-
-    // Provati in ordine: prima il package "release" (quello che avranno gli
-    // utenti finali una volta pubblicata l'app su Play Store), poi quello
-    // della build di test (applicationIdSuffix "test" in build.gradle.kts)
-    // usata durante lo sviluppo. Il primo installato sul dispositivo apre
-    // l'app; se nessuno dei due c'è, dopo l'ultimo tentativo compare il
-    // messaggio di fallback. Puoi lasciarlo così per sempre: per un utente
-    // reale il secondo tentativo semplicemente non troverà nulla e verrà
-    // ignorato, senza effetti collaterali.
-    const PACKAGES_TO_TRY = ["com.example.a864", "com.example.a864test"];
-    const ATTEMPT_TIMEOUT_MS = 1200;
-
-    function tryOpenApp(packageName, shareId) {
-      window.location.replace(
-        "intent://import-template?id=" + encodeURIComponent(shareId) +
-        "#Intent;scheme=864;package=" + packageName + ";end"
-      );
-    }
-
-    function attempt(index) {
-      if (index >= PACKAGES_TO_TRY.length) {
+    if (id) {
+      // Nessun browser_fallback_url per ora: l'app non è ancora sullo
+      // store, quindi un fallback automatico porterebbe solo a un
+      // "elemento non trovato" confuso. Se dopo un breve timeout l'utente
+      // è ancora su questa pagina (segno che l'intent non ha aperto
+      // nulla), mostriamo il messaggio noi.
+      const timer = setTimeout(function () {
         document.getElementById("status").style.display = "none";
         document.getElementById("fallback").style.display = "block";
-        return;
-      }
+      }, 1500);
 
-      let succeeded = false;
-      const onVisibilityChange = function () {
-        if (document.hidden) {
-          succeeded = true;
-          document.removeEventListener("visibilitychange", onVisibilityChange);
-        }
-      };
-      document.addEventListener("visibilitychange", onVisibilityChange);
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) clearTimeout(timer);
+      });
 
-      tryOpenApp(PACKAGES_TO_TRY[index], id);
-
-      setTimeout(function () {
-        document.removeEventListener("visibilitychange", onVisibilityChange);
-        if (!succeeded) {
-          attempt(index + 1);
-        }
-      }, ATTEMPT_TIMEOUT_MS);
-    }
-
-    if (id) {
-      attempt(0);
+      window.location.replace(
+        "intent://import-template?id=" + encodeURIComponent(id) +
+        "#Intent;scheme=864;package=com.example.a864test;end"
+      );
     } else {
       document.getElementById("status").textContent = "Link non valido.";
     }
