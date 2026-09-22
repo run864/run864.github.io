@@ -6,19 +6,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-  <p>Apertura di 864 in corso…</p>
+  <p id="status">Apertura di 864 in corso…</p>
+  <p id="fallback" style="display:none;">
+    Non siamo riusciti ad aprire l'app automaticamente. Assicurati di avere
+    864 installato, poi riapri questo link dal telefono.
+  </p>
   <script>
     const id = new URLSearchParams(window.location.search).get("id");
-    if (id) {
-      const fallbackStoreUrl = encodeURIComponent(
-        "https://play.google.com/store/apps/details?id=com.example.a864"
-      );
+
+    // Provati in ordine: prima il package "release" (quello che avranno gli
+    // utenti finali una volta pubblicata l'app su Play Store), poi quello
+    // della build di test (applicationIdSuffix "test" in build.gradle.kts)
+    // usata durante lo sviluppo. Il primo installato sul dispositivo apre
+    // l'app; se nessuno dei due c'è, dopo l'ultimo tentativo compare il
+    // messaggio di fallback. Puoi lasciarlo così per sempre: per un utente
+    // reale il secondo tentativo semplicemente non troverà nulla e verrà
+    // ignorato, senza effetti collaterali.
+    const PACKAGES_TO_TRY = ["com.example.a864", "com.example.a864test"];
+    const ATTEMPT_TIMEOUT_MS = 1200;
+
+    function tryOpenApp(packageName, shareId) {
       window.location.replace(
-        "intent://import-template?id=" + encodeURIComponent(id) +
-        "#Intent;scheme=864;package=com.example.a864;S.browser_fallback_url=" + fallbackStoreUrl + ";end"
+        "intent://import-template?id=" + encodeURIComponent(shareId) +
+        "#Intent;scheme=864;package=" + packageName + ";end"
       );
     }
+
+    function attempt(index) {
+      if (index >= PACKAGES_TO_TRY.length) {
+        document.getElementById("status").style.display = "none";
+        document.getElementById("fallback").style.display = "block";
+        return;
+      }
+
+      let succeeded = false;
+      const onVisibilityChange = function () {
+        if (document.hidden) {
+          succeeded = true;
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
+
+      tryOpenApp(PACKAGES_TO_TRY[index], id);
+
+      setTimeout(function () {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        if (!succeeded) {
+          attempt(index + 1);
+        }
+      }, ATTEMPT_TIMEOUT_MS);
+    }
+
+    if (id) {
+      attempt(0);
+    } else {
+      document.getElementById("status").textContent = "Link non valido.";
+    }
   </script>
-  <p>Se non succede nulla, <a href="https://play.google.com/store/apps/details?id=com.example.a864">installa 864</a> e riapri il link.</p>
 </body>
 </html>
