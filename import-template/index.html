@@ -10,7 +10,13 @@
   <script>
     const id = new URLSearchParams(window.location.search).get("id");
     if (id) {
-      window.location.replace("864://import-template?id=" + encodeURIComponent(id));
+      const fallbackStoreUrl = encodeURIComponent(
+        "https://play.google.com/store/apps/details?id=com.example.a864"
+      );
+      window.location.replace(
+        "intent://import-template?id=" + encodeURIComponent(id) +
+        "#Intent;scheme=864;package=com.example.a864;S.browser_fallback_url=" + fallbackStoreUrl + ";end"
+      );
     }
   </script>
   <p>Se non succede nulla, <a href="https://play.google.com/store/apps/details?id=com.example.a864">installa 864</a> e riapri il link.</p>
