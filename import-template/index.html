@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>864 — Importa scheda</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <p>Apertura di 864 in corso…</p>
+  <script>
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (id) {
+      window.location.replace("864://import-template?id=" + encodeURIComponent(id));
+    }
+  </script>
+  <p>Se non succede nulla, <a href="https://play.google.com/store/apps/details?id=com.example.a864">installa 864</a> e riapri il link.</p>
+</body>
+</html>
