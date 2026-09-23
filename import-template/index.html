@@ -15,23 +15,16 @@
     const id = new URLSearchParams(window.location.search).get("id");
 
     if (id) {
-      // Niente "package=" apposta: serve solo a Chrome per cercare l'app
-      // su Play Store quando la risoluzione fallisce (succede anche senza
-      // S.browser_fallback_url esplicito, è un default). Senza, se nessuna
-      // app risolve scheme+host non succede nulla — mai più redirect
-      // inatteso allo store. La risoluzione dell'app installata (release,
-      // debug, test, qualunque sia presente) avviene comunque tramite
-      // scheme+host, che è dichiarato identico in tutte le varianti
-      // perché vengono dallo stesso AndroidManifest.xml.
+      // "app864" (non "864"): niente più intent://, che si è rivelato
+      // inaffidabile — semplice redirect diretto, perché "app864" è uno
+      // schema URI valido (a differenza di "864", che inizia con una
+      // cifra e che il browser non può navigare direttamente).
       let opened = false;
       document.addEventListener("visibilitychange", function () {
         if (document.hidden) opened = true;
       });
 
-      window.location.replace(
-        "intent://import-template?id=" + encodeURIComponent(id) +
-        "#Intent;scheme=864;end"
-      );
+      window.location.replace("app864://import-template?id=" + encodeURIComponent(id));
 
       setTimeout(function () {
         if (!opened) {
